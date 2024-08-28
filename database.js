@@ -1,0 +1,1 @@
+const sqlite3 = require('sqlite3').verbose();const db = new sqlite3.Database(':memory:');db.serialize(() => {    db.run(`CREATE TABLE students (        id INTEGER PRIMARY KEY AUTOINCREMENT,        first_name TEXT NOT NULL,        last_name TEXT NOT NULL,        gender TEXT NOT NULL,        age INTEGER NOT NULL    )`);});module.exports = db;
