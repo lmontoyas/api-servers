@@ -1,1 +1,75 @@
-// server.jsconst express = require('express');const bodyParser = require('body-parser');const db = require('./database');const app = express();app.use(bodyParser.json());// Rutas CRUD// 1. Crear un nuevo estudianteapp.post('/students', (req, res) => {    const { first_name, last_name, gender, age } = req.body;    const query = `INSERT INTO students (first_name, last_name, gender, age) VALUES (?, ?, ?, ?)`;        db.run(query, [first_name, last_name, gender, age], function (err) {        if (err) {            return res.status(500).json({ error: err.message });        }        res.status(201).json({ id: this.lastID });    });});// 2. Obtener todos los estudiantesapp.get('/students', (req, res) => {    const query = `SELECT * FROM students`;        db.all(query, [], (err, rows) => {        if (err) {            return res.status(500).json({ error: err.message });        }        res.json({ students: rows });    });});// 3. Obtener un estudiante por IDapp.get('/students/:id', (req, res) => {    const { id } = req.params;    const query = `SELECT * FROM students WHERE id = ?`;    db.get(query, [id], (err, row) => {        if (err) {            return res.status(500).json({ error: err.message });        }        if (!row) {            return res.status(404).json({ error: "Student not found" });        }        res.json({ student: row });    });});// 4. Actualizar un estudiante por IDapp.put('/students/:id', (req, res) => {    const { id } = req.params;    const { first_name, last_name, gender, age } = req.body;    const query = `UPDATE students SET first_name = ?, last_name = ?, gender = ?, age = ? WHERE id = ?`;        db.run(query, [first_name, last_name, gender, age, id], function (err) {        if (err) {            return res.status(500).json({ error: err.message });        }        if (this.changes === 0) {            return res.status(404).json({ error: "Student not found" });        }        res.json({ message: "Student updated successfully" });    });});// 5. Eliminar un estudiante por IDapp.delete('/students/:id', (req, res) => {    const { id } = req.params;    const query = `DELETE FROM students WHERE id = ?`;        db.run(query, [id], function (err) {        if (err) {            return res.status(500).json({ error: err.message });        }        if (this.changes === 0) {            return res.status(404).json({ error: "Student not found" });        }        res.json({ message: "Student deleted successfully" });    });});// Iniciar el servidorconst PORT = process.env.PORT || 3000;app.listen(PORT, () => {    console.log(`Server is running on port ${PORT}`);});
+// app.js
+const express = require('express');
+const bodyParser = require('body-parser');
+const db = require('./db');
+
+const app = express();
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+// GET all students
+app.get('/students', (req, res) => {
+    db.all('SELECT * FROM students', [], (err, rows) => {
+        if (err) {
+            res.status(400).json({ "error": err.message });
+            return;
+        }
+        res.json({ "students": rows });
+    });
+});
+
+// GET a single student by id
+app.get('/student/:id', (req, res) => {
+    const { id } = req.params;
+    db.get('SELECT * FROM students WHERE id = ?', [id], (err, row) => {
+        if (err) {
+            res.status(400).json({ "error": err.message });
+            return;
+        }
+        res.json(row);
+    });
+});
+
+// POST a new student
+app.post('/students', (req, res) => {
+    const { firstname, lastname, gender, age } = req.body;
+    db.run('INSERT INTO students (firstname, lastname, gender, age) VALUES (?, ?, ?, ?)', 
+    [firstname, lastname, gender, age], function(err) {
+        if (err) {
+            res.status(400).json({ "error": err.message });
+            return;
+        }
+        res.json({ "student_id": this.lastID });
+    });
+});
+
+// PUT update a student by id
+app.put('/student/:id', (req, res) => {
+    const { id } = req.params;
+    const { firstname, lastname, gender, age } = req.body;
+    db.run('UPDATE students SET firstname = ?, lastname = ?, gender = ?, age = ? WHERE id = ?', 
+    [firstname, lastname, gender, age, id], function(err) {
+        if (err) {
+            res.status(400).json({ "error": err.message });
+            return;
+        }
+        res.json({ updatedID: id });
+    });
+});
+
+// DELETE a student by id
+app.delete('/student/:id', (req, res) => {
+    const { id } = req.params;
+    db.run('DELETE FROM students WHERE id = ?', [id], function(err) {
+        if (err) {
+            res.status(400).json({ "error": err.message });
+            return;
+        }
+        res.json({ deletedID: id });
+    });
+});
+
+const PORT = 8000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
